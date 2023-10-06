@@ -1,4 +1,4 @@
-{
+let plugin = {
   settings: {
     sourceNoteUUID: null,
   },
@@ -7,13 +7,13 @@
     async "Create tomorrow's jot" (app, noteHandle) {
       const newNoteName = this._getNextDaysName(noteHandle.name);
       console.log(newNoteName);
-      
+
       const newNote = await app.createNote(newNoteName, noteHandle.tags);
       console.log(newNote);
-      
+
       const newNoteHandle = await app.findNote({uuid: newNote});
       console.log(JSON.stringify(newNoteHandle));
-      
+
       const url = `https://www.amplenote.com/notes/${ newNote }`;
       // const url = `https://www.amplenote.com/notes/new`;
 
@@ -27,7 +27,7 @@
                 type: "note"
               }
             ]
-            
+
           }
         );
         if (!noteHandle) return;
@@ -35,10 +35,13 @@
       }
       const sourceNote = await app.findNote({uuid: this.settings.sourceNoteUUID});
       console.log(JSON.stringify(sourceNote));
-      
-      const sourceContents = await app.getNoteContent(sourceNote);
+
+      let sourceContents = await app.getNoteContent(sourceNote);
       console.log(sourceContents);
-      
+
+      // Make sure we handle empty tasks bug manifesting October 2023
+      sourceContents = sourceContents.replace("\\<!--", " <!--");
+
       await app.insertContent(newNoteHandle, sourceContents);
       app.navigate(url);
       // TODO: insert note contents
