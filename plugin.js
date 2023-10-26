@@ -1,6 +1,7 @@
 let plugin = {
   settings: {
     sourceNoteUUID: null,
+    jotTag: "daily-jots",
   },
   
   dailyJotOption: {
@@ -48,34 +49,80 @@ let plugin = {
     }
   },
 
-  _getNextDaysName(dateString) {
-    // Remove ordinal suffix from day
-    var dateStringNoSuffix = dateString.replace(/(\d+)(st|nd|rd|th)/, "$1");
+  appOption: {
+    async "Resurface random jot" (app) {
+      try {
+        let jotTag = this.settings.jotTag || "daily-jots";
+        console.log(jotTag);
+        let jotList = await app.filterNotes({tag: jotTag});
+        console.log(jotList);
+        let randomJot = jotList[Math.floor(Math.random() * jotList.length)];
+        console.log(randomJot);
+        await app.navigate(`https://www.amplenote.com/notes/${ randomJot.uuid }`);
+      } catch (err) {
+        console.log(err);
+        await app.alert(err);
+      }
+    },
 
-    var date = new Date(dateStringNoSuffix); // parse the date string into a Date object
-    date.setDate(date.getDate() + 1); // increment the day by one
+    async "One Year Ago" (app) {
+      try {
+        let jotTag = this.settings.jotTag || "daily-jots";
+        console.log(jotTag);
+        let oneYearAgo = this._getOneYearAgoName(this._getAmplenoteDate(new Date()));
+        let jotList = await app.filterNotes({tag: jotTag, query: oneYearAgo});
+        if (jotList.length == 0) {
+          console.log("Empty");
+          await app.alert(`No jot found for a year ago in ${ jotTag }`);
+          return;
+        }
+        console.log(jotList);
+        await app.navigate(`https://www.amplenote.com/notes/${ jotList[0].uuid }`);
+      } catch (err) {
+        console.log(err);
+        await app.alert(err);
+      }
+    }
+  },
 
+  _getAmplenoteDate(date) {
     // array with month names
     var monthNames = ["January", "February", "March", "April", "May", "June",
-                      "July", "August", "September", "October", "November", "December"];
+      "July", "August", "September", "October", "November", "December"];
 
     // calculate the ordinal
     var day = date.getDate();
     var ordinal;
     if (day > 3 && day < 21) {
-        ordinal = "th";
+      ordinal = "th";
     } else {
-        switch (day % 10) {
-            case 1: ordinal = "st"; break;
-            case 2: ordinal = "nd"; break;
-            case 3: ordinal = "rd"; break;
-            default: ordinal = "th"; break;
-        }
+      switch (day % 10) {
+        case 1: ordinal = "st"; break;
+        case 2: ordinal = "nd"; break;
+        case 3: ordinal = "rd"; break;
+        default: ordinal = "th"; break;
+      }
     }
 
     // construct the next day's date string
-    var nextDayString = monthNames[date.getMonth()] + " " + day + ordinal + ", " + date.getFullYear();
+    var dateString = monthNames[date.getMonth()] + " " + day + ordinal + ", " + date.getFullYear();
 
-    return nextDayString;
+    return dateString;
   },
+
+  _getNextDaysName(dateString) {
+    // Remove ordinal suffix from day
+    var dateStringNoSuffix = dateString.replace(/(\d+)(st|nd|rd|th)/, "$1");
+    var date = new Date(dateStringNoSuffix); // parse the date string into a Date object
+    date.setDate(date.getDate() + 1); // increment the day by one
+    return this._getAmplenoteDate(date);
+  },
+
+  _getOneYearAgoName(dateString) {
+    // Remove ordinal suffix from day
+    var dateStringNoSuffix = dateString.replace(/(\d+)(st|nd|rd|th)/, "$1");
+    var date = new Date(dateStringNoSuffix); // parse the date string into a Date object
+    date.setFullYear(date.getFullYear() - 1);
+    return this._getAmplenoteDate(date);
+  }
 } 
